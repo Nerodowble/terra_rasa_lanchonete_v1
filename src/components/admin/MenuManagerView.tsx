@@ -90,7 +90,7 @@ export const MenuManagerView: React.FC = () => {
       }
     } catch (err) {
       console.error('Erro no upload de foto:', err);
-      alert('Não foi possível salvar a imagem no banco SQLite. Verifique o arquivo e tente novamente.');
+      alert('Não foi possível salvar a imagem. Verifique o arquivo e tente novamente.');
     } finally {
       setIsUploadingImage(false);
     }
@@ -203,7 +203,7 @@ export const MenuManagerView: React.FC = () => {
               </span>
             </h1>
             <p className="text-xs text-stone-400">
-              Cadastre novos pratos com fotos (salvas no SQLite), ajuste preços, pause itens ou remova pratos
+              Cadastre novos pratos com fotos, ajuste preços, pause itens ou remova pratos
             </p>
           </div>
         </div>
@@ -474,10 +474,10 @@ export const MenuManagerView: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveProduct} className="p-4 sm:p-5 space-y-4 overflow-y-auto text-stone-800 text-xs sm:text-sm">
-              {/* Photo upload to SQLite */}
+              {/* Envio de foto */}
               <div className="border border-dashed border-stone-300 rounded-2xl p-3.5 bg-stone-50/50 flex flex-col items-center justify-center text-center space-y-2">
                 <label className="block text-xs font-bold text-stone-700">
-                  Foto do Prato (Salva no SQLite)
+                  Foto do Prato
                 </label>
 
                 {formData.image ? (
@@ -522,13 +522,13 @@ export const MenuManagerView: React.FC = () => {
                     className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     <Upload className="w-3.5 h-3.5" />
-                    <span>{isUploadingImage ? 'Salvando no SQLite...' : 'Upload de Imagem'}</span>
+                    <span>{isUploadingImage ? 'Enviando...' : 'Upload de Imagem'}</span>
                   </button>
                 </div>
 
                 <input
-                  type="url"
-                  placeholder="Ou cole a URL direta da foto..."
+                  type="text"
+                  placeholder="Ou cole o endereço de uma foto da internet..."
                   value={formData.image}
                   onChange={e => setFormData(prev => ({ ...prev, image: e.target.value }))}
                   className="w-full text-[11px] px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg text-stone-600 focus:outline-none focus:ring-1 focus:ring-amber-500"

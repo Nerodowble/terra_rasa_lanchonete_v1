@@ -327,7 +327,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Driver Settlement To Print
   const [driverSettlementToPrint, setDriverSettlementToPrint] = useState<DriverSettlementData | null>(null);
 
-  // Initial fetch from SQLite database
+  // Carga inicial vinda da API
   useEffect(() => {
     fetch('/api/config')
       .then(res => res.json())
@@ -336,7 +336,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
           setConfig(prev => ({ ...prev, ...data }));
         }
       })
-      .catch(err => console.warn('SQLite config load fallback', err));
+      .catch(err => console.warn('Falha ao carregar config', err));
 
     fetch('/api/products')
       .then(res => res.json())
@@ -345,7 +345,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
           setProducts(data);
         }
       })
-      .catch(err => console.warn('SQLite products load fallback', err));
+      .catch(err => console.warn('Falha ao carregar produtos', err));
 
     fetch('/api/orders')
       .then(res => res.json())
@@ -354,7 +354,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
           setOrders(data);
         }
       })
-      .catch(err => console.warn('SQLite orders load fallback', err));
+      .catch(err => console.warn('Falha ao carregar pedidos', err));
   }, []);
 
   // Persistent storage synchronizers
@@ -407,7 +407,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
-      }).catch(err => console.error('Erro ao salvar config no SQLite:', err));
+      }).catch(err => console.error('Erro ao salvar config:', err));
       return updated;
     });
   }, []);
@@ -420,7 +420,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
-      }).catch(err => console.error('Erro ao salvar status no SQLite:', err));
+      }).catch(err => console.error('Erro ao salvar status:', err));
       return updated;
     });
   }, []);
@@ -910,7 +910,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(target),
-        }).catch(err => console.error('Erro ao atualizar disponibilidade no SQLite:', err));
+        }).catch(err => console.error('Erro ao atualizar disponibilidade:', err));
       }
       return updated;
     });
@@ -925,7 +925,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(target),
-        }).catch(err => console.error('Erro ao atualizar preço no SQLite:', err));
+        }).catch(err => console.error('Erro ao atualizar preço:', err));
       }
       return updated;
     });
@@ -943,7 +943,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newProduct),
-    }).catch(err => console.error('Erro ao salvar produto no SQLite:', err));
+    }).catch(err => console.error('Erro ao salvar produto:', err));
   }, []);
 
   const updateProduct = useCallback((productId: string, data: Partial<Product>) => {
@@ -955,7 +955,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(target),
-        }).catch(err => console.error('Erro ao atualizar produto no SQLite:', err));
+        }).catch(err => console.error('Erro ao atualizar produto:', err));
       }
       return updated;
     });
@@ -965,7 +965,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setProducts(prev => prev.filter(p => p.id !== productId));
     fetch(`/api/products/${productId}`, {
       method: 'DELETE',
-    }).catch(err => console.error('Erro ao excluir produto no SQLite:', err));
+    }).catch(err => console.error('Erro ao excluir produto:', err));
   }, []);
 
   const clearAllProducts = useCallback(() => {
@@ -996,7 +996,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setDriverSettlementToPrint(null);
 
     fetch('/api/orders', { method: 'DELETE' }).catch(err =>
-      console.error('Erro ao limpar pedidos no SQLite:', err)
+      console.error('Erro ao limpar pedidos:', err)
     );
 
     localStorage.removeItem(STORAGE_KEYS.ORDERS);
@@ -1026,7 +1026,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ clearProducts }),
-    }).catch(err => console.error('Erro ao zerar sistema no SQLite:', err));
+    }).catch(err => console.error('Erro ao zerar sistema:', err));
 
     localStorage.removeItem(STORAGE_KEYS.ORDERS);
     localStorage.removeItem(STORAGE_KEYS.TABLES);

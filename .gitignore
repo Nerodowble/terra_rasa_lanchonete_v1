@@ -6,3 +6,13 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Banco JSON em execucao (o seed.json fica versionado, estes nao)
+data/db.json
+data/orders.json
+data/photos/
+data/*.tmp
+data/*.corrompido-*
+restaurant.db
+.vercel
+data/photos-originais/

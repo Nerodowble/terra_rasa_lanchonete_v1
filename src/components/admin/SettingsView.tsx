@@ -78,7 +78,7 @@ export const SettingsView: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Falha no upload para o banco SQLite');
+        throw new Error('Falha no upload da imagem');
       }
 
       const result = await response.json();
@@ -140,7 +140,7 @@ export const SettingsView: React.FC = () => {
             <h1 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
               <span>Configurações do Estabelecimento</span>
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-stone-800 text-stone-300 border border-stone-700">
-                SQLite Integrado
+                Banco JSON
               </span>
             </h1>
             <p className="text-xs text-stone-400">
@@ -180,7 +180,7 @@ export const SettingsView: React.FC = () => {
       {savedSuccess && (
         <div className="bg-emerald-50 border border-emerald-300 text-emerald-900 p-4 rounded-xl flex items-center gap-3 text-xs font-bold animate-fade-in shadow-sm">
           <Check className="w-5 h-5 text-emerald-600 shrink-0" />
-          <span>Configurações atualizadas e salvas com sucesso no banco de dados SQLite!</span>
+          <span>Configurações salvas com sucesso!</span>
         </div>
       )}
 
@@ -221,7 +221,7 @@ export const SettingsView: React.FC = () => {
             </div>
           </div>
 
-          {/* Photo & Logo Upload into SQLite */}
+          {/* Envio de logo e banner */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             {/* Logo / Foto Principal */}
             <div className="border border-dashed border-stone-300 rounded-2xl p-4 bg-stone-50/50 flex flex-col items-center justify-center text-center space-y-3">
@@ -271,13 +271,13 @@ export const SettingsView: React.FC = () => {
                   className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>{isUploadingLogo ? 'Salvando no SQLite...' : 'Upload Imagem'}</span>
+                  <span>{isUploadingLogo ? 'Enviando...' : 'Upload Imagem'}</span>
                 </button>
               </div>
 
               <input
-                type="url"
-                placeholder="Ou cole a URL da imagem aqui..."
+                type="text"
+                placeholder="Ou cole o endereço de uma imagem da internet..."
                 value={formData.logoUrl}
                 onChange={e => handleInputChange('logoUrl', e.target.value)}
                 className="w-full text-[11px] px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg text-stone-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
@@ -335,13 +335,13 @@ export const SettingsView: React.FC = () => {
                   className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>{isUploadingBanner ? 'Salvando no SQLite...' : 'Upload Banner'}</span>
+                  <span>{isUploadingBanner ? 'Enviando...' : 'Upload Banner'}</span>
                 </button>
               </div>
 
               <input
-                type="url"
-                placeholder="Ou cole a URL do banner aqui..."
+                type="text"
+                placeholder="Ou cole o endereço de uma imagem da internet..."
                 value={formData.bannerUrl}
                 onChange={e => handleInputChange('bannerUrl', e.target.value)}
                 className="w-full text-[11px] px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg text-stone-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
