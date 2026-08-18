@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useComanda } from '../../context/ComandaContext';
+import { useComanda, cabecalhosAdmin } from '../../context/ComandaContext';
 import { formatBRL } from '../../utils/formatters';
 import {
   Store,
@@ -74,6 +74,7 @@ export const SettingsView: React.FC = () => {
 
       const response = await fetch('/api/upload', {
         method: 'POST',
+        headers: cabecalhosAdmin(false), // sem Content-Type: o FormData define o dele
         body: data,
       });
 

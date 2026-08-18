@@ -8,6 +8,7 @@ import {
   lerCardapio, alterarCardapio, lerPedidos, alterarPedidos,
   salvarFoto, lerFoto, INFO,
 } from './jsonStore.js';
+import { conferirSenha, criarToken, exigirAdmin, INFO_AUTH } from './auth.js';
 
 const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 }, storage: multer.memoryStorage() });
 
@@ -57,13 +58,28 @@ export function criarApi(): Express {
     });
   }));
 
+
+  // ------------------------------------------------------------- login
+  app.post('/api/login', rota(async (req, res) => {
+    const { username, password } = req.body || {};
+    if (!conferirSenha(username, password)) {
+      return res.status(401).json({ error: 'Usuário ou senha incorretos' });
+    }
+    res.json({ success: true, token: criarToken(username), validadeHoras: INFO_AUTH.validadeHoras });
+  }));
+
+  // diz ao front se o painel esta configurado (sem revelar usuario nem senha)
+  app.get('/api/auth-status', (req, res) => {
+    res.json({ configurada: INFO_AUTH.configurada });
+  });
+
   // ------------------------------------------------------------ config
   app.get('/api/config', rota(async (req, res) => {
     const c = await lerCardapio();
     res.json(Object.keys(c.config || {}).length ? c.config : CONFIG_PADRAO);
   }));
 
-  app.post('/api/config', rota(async (req, res) => {
+  app.post('/api/config', exigirAdmin, rota(async (req, res) => {
     const c = await alterarCardapio(x => { x.config = req.body; });
     res.json({ success: true, config: c.config });
   }));
@@ -75,7 +91,7 @@ export function criarApi(): Express {
       (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || String(a.name).localeCompare(String(b.name))));
   }));
 
-  app.post('/api/categories', rota(async (req, res) => {
+  app.post('/api/categories', exigirAdmin, rota(async (req, res) => {
     const { id, name, icon, sortOrder, description } = req.body;
     if (!id || !name) return res.status(400).json({ error: 'ID e Nome são obrigatórios' });
     const cat = { id, name, icon: icon || 'Utensils', sortOrder: sortOrder || 0, description: description || '' };
@@ -86,7 +102,7 @@ export function criarApi(): Express {
     res.json({ success: true, category: cat });
   }));
 
-  app.delete('/api/categories/:id', rota(async (req, res) => {
+  app.delete('/api/categories/:id', exigirAdmin, rota(async (req, res) => {
     await alterarCardapio(c => { c.categories = c.categories.filter(x => x.id !== req.params.id); });
     res.json({ success: true, deletedId: req.params.id });
   }));
@@ -98,7 +114,7 @@ export function criarApi(): Express {
       (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || String(a.name).localeCompare(String(b.name))));
   }));
 
-  app.post('/api/products', rota(async (req, res) => {
+  app.post('/api/products', exigirAdmin, rota(async (req, res) => {
     const p = req.body;
     const id = p.id || `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const now = new Date().toISOString();
@@ -128,13 +144,13 @@ export function criarApi(): Express {
     res.json({ success: true, id, product: produto });
   }));
 
-  app.delete('/api/products/:id', rota(async (req, res) => {
+  app.delete('/api/products/:id', exigirAdmin, rota(async (req, res) => {
     await alterarCardapio(c => { c.products = c.products.filter(x => x.id !== req.params.id); });
     res.json({ success: true, deletedId: req.params.id });
   }));
 
   // ------------------------------------------------------------- fotos
-  app.post('/api/upload', upload.single('photo'), rota(async (req, res) => {
+  app.post('/api/upload', exigirAdmin, upload.single('photo'), rota(async (req, res) => {
     if (req.file) {
       const m = await salvarFoto(req.file.buffer, req.file.mimetype || 'image/jpeg', req.file.originalname);
       return res.json({ success: true, photoId: m.id, url: `/api/photos/${m.id}`, filename: m.filename, size: m.size });
@@ -188,7 +204,7 @@ export function criarApi(): Express {
     res.json({ success: true, order: { ...o, id } });
   }));
 
-  app.patch('/api/orders/:id', rota(async (req, res) => {
+  app.patch('/api/orders/:id', exigirAdmin, rota(async (req, res) => {
     const u = req.body;
     let achou = false;
     const p = await alterarPedidos(x => {
@@ -210,23 +226,23 @@ export function criarApi(): Express {
     res.json({ success: true, id: req.params.id, status: atual?.status, paymentStatus: atual?.paymentStatus });
   }));
 
-  app.delete('/api/orders/:id', rota(async (req, res) => {
+  app.delete('/api/orders/:id', exigirAdmin, rota(async (req, res) => {
     await alterarPedidos(p => { p.orders = p.orders.filter(o => o.id !== req.params.id); });
     res.json({ success: true, deletedId: req.params.id });
   }));
 
-  app.delete('/api/orders', rota(async (req, res) => {
+  app.delete('/api/orders', exigirAdmin, rota(async (req, res) => {
     await alterarPedidos(p => { p.orders = []; });
     res.json({ success: true, message: 'Todos os pedidos foram removidos com sucesso' });
   }));
 
-  app.post('/api/reset-all', rota(async (req, res) => {
+  app.post('/api/reset-all', exigirAdmin, rota(async (req, res) => {
     await alterarPedidos(p => { p.orders = []; });
     if (req.body?.clearProducts) await alterarCardapio(c => { c.products = []; });
     res.json({ success: true, message: 'Sistema zerado com sucesso' });
   }));
 
-  app.get('/api/backup', rota(async (req, res) => {
+  app.get('/api/backup', exigirAdmin, rota(async (req, res) => {
     const c = await lerCardapio();
     const p = await lerPedidos();
     res.setHeader('Content-Disposition', `attachment; filename="backup-${Date.now()}.json"`);

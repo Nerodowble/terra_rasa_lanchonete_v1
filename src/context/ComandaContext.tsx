@@ -169,7 +169,7 @@ interface ComandaContextType {
   isLoginModalOpen: boolean;
   openAdminLogin: () => void;
   closeAdminLogin: () => void;
-  loginAdmin: (username: string, pass: string) => boolean;
+  loginAdmin: (username: string, pass: string) => Promise<boolean>;
   logoutAdmin: () => void;
 
   // JSON Database & Reports Export
@@ -198,9 +198,32 @@ const STORAGE_KEYS = {
   ORDER_MODE: `${STORAGE_PREFIX}order_mode`,
   DELIVERY_ADDRESS: `${STORAGE_PREFIX}delivery_address`,
   ADMIN_AUTH: `${STORAGE_PREFIX}admin_auth`,
+  ADMIN_TOKEN: `${STORAGE_PREFIX}admin_token`,
 };
 
-// Immediate cleanup of any legacy keys with mock/sample data
+/** Token do administrador, para as rotas que exigem permissão. */
+export const tokenAdmin = (): string | null => {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.ADMIN_TOKEN);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Cabeçalhos das requisições administrativas. Junte ao seu fetch:
+ *   fetch('/api/products', { method: 'POST', headers: cabecalhosAdmin(), ... })
+ */
+export const cabecalhosAdmin = (comJson = true): Record<string, string> => {
+  const h: Record<string, string> = {};
+  if (comJson) h['Content-Type'] = 'application/json';
+  const t = tokenAdmin();
+  if (t) h['Authorization'] = `Bearer ${t}`;
+  return h;
+};
+
+// Limpeza de chaves antigas no navegador, de versoes anteriores do app.
+// Mexe SO no localStorage deste visitante - nunca no servidor.
 if (typeof window !== 'undefined') {
   try {
     const isWiped = localStorage.getItem('restaurante_v5_wipe_done');
@@ -214,7 +237,6 @@ if (typeof window !== 'undefined') {
       }
       keysToRemove.forEach(k => localStorage.removeItem(k));
       localStorage.setItem('restaurante_v5_wipe_done', 'true');
-      fetch('/api/orders', { method: 'DELETE' }).catch(() => {});
     }
   } catch (e) {
     // Ignore
@@ -405,7 +427,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const updated = { ...prev, ...newConfig };
       fetch('/api/config', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: cabecalhosAdmin(),
         body: JSON.stringify(updated),
       }).catch(err => console.error('Erro ao salvar config:', err));
       return updated;
@@ -418,7 +440,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const updated = { ...prev, isOpen: newStatus };
       fetch('/api/config', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: cabecalhosAdmin(),
         body: JSON.stringify(updated),
       }).catch(err => console.error('Erro ao salvar status:', err));
       return updated;
@@ -908,7 +930,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (target) {
         fetch('/api/products', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: cabecalhosAdmin(),
           body: JSON.stringify(target),
         }).catch(err => console.error('Erro ao atualizar disponibilidade:', err));
       }
@@ -923,7 +945,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (target) {
         fetch('/api/products', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: cabecalhosAdmin(),
           body: JSON.stringify(target),
         }).catch(err => console.error('Erro ao atualizar preço:', err));
       }
@@ -941,7 +963,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     fetch('/api/products', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: cabecalhosAdmin(),
       body: JSON.stringify(newProduct),
     }).catch(err => console.error('Erro ao salvar produto:', err));
   }, []);
@@ -953,7 +975,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (target) {
         fetch('/api/products', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: cabecalhosAdmin(),
           body: JSON.stringify(target),
         }).catch(err => console.error('Erro ao atualizar produto:', err));
       }
@@ -995,7 +1017,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setReceiptOrderToPrint(null);
     setDriverSettlementToPrint(null);
 
-    fetch('/api/orders', { method: 'DELETE' }).catch(err =>
+    fetch('/api/orders', { method: 'DELETE', headers: cabecalhosAdmin(false) }).catch(err =>
       console.error('Erro ao limpar pedidos:', err)
     );
 
@@ -1024,7 +1046,7 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     fetch('/api/reset-all', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: cabecalhosAdmin(),
       body: JSON.stringify({ clearProducts }),
     }).catch(err => console.error('Erro ao zerar sistema:', err));
 
@@ -1126,23 +1148,36 @@ export const ComandaProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setIsLoginModalOpen(false);
   }, []);
 
-  const loginAdmin = useCallback((username: string, pass: string): boolean => {
-    const u = username.trim().toLowerCase();
-    const p = pass.trim();
+  const loginAdmin = useCallback(async (username: string, pass: string): Promise<boolean> => {
+    // A senha NAO vive aqui. Quem confere e o servidor, que devolve um token
+    // assinado. Assim nada sensivel vai para o pacote que roda no navegador.
+    try {
+      const resp = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password: pass }),
+      });
+      if (!resp.ok) return false;
 
-    if (u === 'admin_willian' && p === 'Trymore1@3') {
-      setIsAdminAuthenticated(true);
+      const { token } = await resp.json();
+      if (!token) return false;
+
+      localStorage.setItem(STORAGE_KEYS.ADMIN_TOKEN, token);
       localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
+      setIsAdminAuthenticated(true);
       setViewMode('admin');
       setIsLoginModalOpen(false);
       return true;
+    } catch (err) {
+      console.error('Falha ao entrar:', err);
+      return false;
     }
-    return false;
   }, []);
 
   const logoutAdmin = useCallback(() => {
     setIsAdminAuthenticated(false);
     localStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
+    localStorage.removeItem(STORAGE_KEYS.ADMIN_TOKEN);
     setViewMode('client');
   }, []);
 

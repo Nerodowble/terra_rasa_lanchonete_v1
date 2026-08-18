@@ -39,18 +39,21 @@ export const AdminLoginModal: React.FC = () => {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      const success = loginAdmin(username, password);
-      setIsLoading(false);
-
-      if (success) {
-        setUsername('');
-        setPassword('');
-        setErrorMsg('');
-      } else {
-        setErrorMsg('Usuário ou senha incorretos. Verifique suas credenciais e tente novamente.');
-      }
-    }, 200);
+    loginAdmin(username, password)
+      .then(success => {
+        setIsLoading(false);
+        if (success) {
+          setUsername('');
+          setPassword('');
+          setErrorMsg('');
+        } else {
+          setErrorMsg('Usuário ou senha incorretos. Verifique suas credenciais e tente novamente.');
+        }
+      })
+      .catch(() => {
+        setIsLoading(false);
+        setErrorMsg('Não foi possível falar com o servidor. Tente novamente.');
+      });
   };
 
   return (
