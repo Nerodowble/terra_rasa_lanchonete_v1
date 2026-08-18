@@ -137,7 +137,7 @@ export function criarApi(): Express {
   app.post('/api/upload', upload.single('photo'), rota(async (req, res) => {
     if (req.file) {
       const m = await salvarFoto(req.file.buffer, req.file.mimetype || 'image/jpeg', req.file.originalname);
-      return res.json({ success: true, photoId: m.id, url: m.url || `/api/photos/${m.id}`, filename: m.filename, size: m.size });
+      return res.json({ success: true, photoId: m.id, url: `/api/photos/${m.id}`, filename: m.filename, size: m.size });
     }
     if (req.body?.base64Data) {
       const s = req.body.base64Data as string;
@@ -145,7 +145,7 @@ export function criarApi(): Express {
       const mime = match ? match[1] : 'image/jpeg';
       const buffer = Buffer.from(match ? match[2] : s, 'base64');
       const m = await salvarFoto(buffer, mime, req.body.filename || 'upload.jpg');
-      return res.json({ success: true, photoId: m.id, url: m.url || `/api/photos/${m.id}`, size: m.size });
+      return res.json({ success: true, photoId: m.id, url: `/api/photos/${m.id}`, size: m.size });
     }
     res.status(400).json({ error: 'Nenhuma imagem enviada' });
   }));
@@ -153,7 +153,8 @@ export function criarApi(): Express {
   app.get('/api/photos/:id', rota(async (req, res) => {
     const foto = await lerFoto(req.params.id);
     if (!foto) return res.status(404).send('Imagem não encontrada');
-    if (foto.url) return res.redirect(foto.url);
+    // immutable + 1 ano: o navegador e o CDN guardam, entao cada foto e lida
+    // do Blob uma vez so, por visitante
     res.setHeader('Content-Type', foto.meta.mimeType);
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     res.send(foto.buffer);

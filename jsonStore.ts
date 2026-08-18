@@ -23,7 +23,8 @@ export interface PhotoMeta {
   mimeType: string;
   size: number;            // tamanho ja comprimido
   createdAt: string;
-  url?: string;            // preenchido no modo Blob
+  caminho?: string;         // chave dentro do Blob (modo blob)
+  url?: string;             // legado: fotos gravadas antes do store virar privado
   tamanhoOriginal?: number; // quanto tinha antes de comprimir
 }
 
@@ -52,12 +53,13 @@ export const MODO: 'blob' | 'local' = TOKEN_BLOB ? 'blob' : 'local';
 const PREFIXO = process.env.BLOB_PREFIX || 'terrarasa-dados';
 
 /**
- * Dados do negocio (cardapio, pedidos) ficam PRIVADOS: so quem tem o token le.
- * As fotos ficam publicas de proposito - elas precisam abrir direto no
- * navegador do cliente, e nao tem nada sensivel numa foto de lanche.
+ * Tudo privado: o store do Vercel e configurado como Private e nao aceita
+ * gravar blob publico dentro dele. As fotos, entao, nao tem URL direta -
+ * quem serve e a rota /api/photos/:id, que le com o token e devolve os bytes.
+ * O navegador do cliente cacheia por um ano, entao isso custa uma leitura so.
  */
 const ACESSO_DADOS = 'private' as const;
-const ACESSO_FOTOS = 'public' as const;
+const ACESSO_FOTOS = 'private' as const;
 const CHAVE_CARDAPIO = `${PREFIXO}/db.json`;
 const CHAVE_PEDIDOS = `${PREFIXO}/orders.json`;
 
@@ -244,12 +246,11 @@ export async function salvarFoto(original: Buffer, mimeOriginal: string, filenam
 
   if (MODO === 'blob') {
     const { put } = await import('@vercel/blob');
-    const r = await put(`${PREFIXO}/photos/${id}${ext}`, buffer, {
+    meta.caminho = `${PREFIXO}/photos/${id}${ext}`;
+    await put(meta.caminho, buffer, {
       access: ACESSO_FOTOS, token: TOKEN_BLOB, contentType: mimeType,
-      addRandomSuffix: true, // nome imprevisivel, evita alguem varrer o acervo
-      allowOverwrite: true,
+      addRandomSuffix: false, allowOverwrite: true,
     });
-    meta.url = r.url;
   } else {
     fs.mkdirSync(DIR_FOTOS, { recursive: true });
     fs.writeFileSync(path.join(DIR_FOTOS, id + ext), buffer);
@@ -259,11 +260,24 @@ export async function salvarFoto(original: Buffer, mimeOriginal: string, filenam
   return meta;
 }
 
-export async function lerFoto(id: string): Promise<{ meta: PhotoMeta; buffer?: Buffer; url?: string } | null> {
+export async function lerFoto(id: string): Promise<{ meta: PhotoMeta; buffer: Buffer } | null> {
   const c = await lerCardapio();
   const meta = c.photos.find(p => p.id === id);
   if (!meta) return null;
-  if (MODO === 'blob') return meta.url ? { meta, url: meta.url } : null;
+
+  if (MODO === 'blob') {
+    const { get } = await import('@vercel/blob');
+    const caminho = meta.caminho || `${PREFIXO}/photos/${id}${EXT_POR_MIME[meta.mimeType] || '.bin'}`;
+    try {
+      const r = await get(caminho, { access: ACESSO_FOTOS, token: TOKEN_BLOB });
+      if (!r || !r.stream) return null;
+      const ab = await new Response(r.stream as any).arrayBuffer();
+      return { meta, buffer: Buffer.from(ab) };
+    } catch {
+      return null;
+    }
+  }
+
   const arq = path.join(DIR_FOTOS, id + (EXT_POR_MIME[meta.mimeType] || '.bin'));
   return fs.existsSync(arq) ? { meta, buffer: fs.readFileSync(arq) } : null;
 }
