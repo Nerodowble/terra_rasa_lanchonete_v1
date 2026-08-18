@@ -46,11 +46,18 @@ const TOKEN_BLOB = process.env.BLOB_READ_WRITE_TOKEN;
 export const MODO: 'blob' | 'local' = TOKEN_BLOB ? 'blob' : 'local';
 
 /**
- * Prefixo secreto das chaves no Blob. O Vercel Blob serve tudo por URL
- * publica; quem souber a URL le o arquivo. Com um prefixo aleatorio na
- * variavel BLOB_PREFIX, a URL vira impossivel de adivinhar.
+ * Pasta dos arquivos dentro do Blob. Como o store e PRIVADO, ler exige token -
+ * o prefixo aqui e so organizacao, nao seguranca.
  */
 const PREFIXO = process.env.BLOB_PREFIX || 'terrarasa-dados';
+
+/**
+ * Dados do negocio (cardapio, pedidos) ficam PRIVADOS: so quem tem o token le.
+ * As fotos ficam publicas de proposito - elas precisam abrir direto no
+ * navegador do cliente, e nao tem nada sensivel numa foto de lanche.
+ */
+const ACESSO_DADOS = 'private' as const;
+const ACESSO_FOTOS = 'public' as const;
 const CHAVE_CARDAPIO = `${PREFIXO}/db.json`;
 const CHAVE_PEDIDOS = `${PREFIXO}/orders.json`;
 
@@ -72,12 +79,13 @@ function cardapioVazio(): Cardapio {
 // ------------------------------------------------------- camada de I/O
 async function lerJson<T>(chave: string, arquivo: string): Promise<T | null> {
   if (MODO === 'blob') {
-    const { head } = await import('@vercel/blob');
+    const { get } = await import('@vercel/blob');
     try {
-      const info = await head(chave, { token: TOKEN_BLOB });
-      const resp = await fetch(info.url, { cache: 'no-store' });
-      if (!resp.ok) return null;
-      return (await resp.json()) as T;
+      // useCache: false garante que dois pedidos seguidos nao leiam versao velha do CDN
+      const r = await get(chave, { access: ACESSO_DADOS, token: TOKEN_BLOB, useCache: false });
+      if (!r || !r.stream) return null;
+      const texto = await new Response(r.stream as any).text();
+      return JSON.parse(texto) as T;
     } catch {
       return null; // ainda nao existe
     }
@@ -98,7 +106,7 @@ async function gravarJson(chave: string, arquivo: string, dados: any): Promise<v
   if (MODO === 'blob') {
     const { put } = await import('@vercel/blob');
     await put(chave, texto, {
-      access: 'public',
+      access: ACESSO_DADOS,
       token: TOKEN_BLOB,
       contentType: 'application/json',
       addRandomSuffix: false,
@@ -237,8 +245,9 @@ export async function salvarFoto(original: Buffer, mimeOriginal: string, filenam
   if (MODO === 'blob') {
     const { put } = await import('@vercel/blob');
     const r = await put(`${PREFIXO}/photos/${id}${ext}`, buffer, {
-      access: 'public', token: TOKEN_BLOB, contentType: mimeType,
-      addRandomSuffix: false, allowOverwrite: true,
+      access: ACESSO_FOTOS, token: TOKEN_BLOB, contentType: mimeType,
+      addRandomSuffix: true, // nome imprevisivel, evita alguem varrer o acervo
+      allowOverwrite: true,
     });
     meta.url = r.url;
   } else {
