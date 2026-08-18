@@ -5,8 +5,8 @@
 import path from 'path';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
-import { criarApi } from './app';
-import { INFO } from './jsonStore';
+import { criarApi } from './app.js';
+import { INFO } from './jsonStore.js';
 
 async function iniciar() {
   const app = criarApi();
@@ -22,8 +22,8 @@ async function iniciar() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Servidor em http://localhost:${PORT}`);
-    console.log(`📄 Banco: ${INFO.modo.toUpperCase()} → ${INFO.destino}`);
+    console.log(`Servidor em http://localhost:${PORT}`);
+    console.log(`Banco: ${INFO.modo.toUpperCase()} -> ${INFO.destino}`);
   });
 }
 

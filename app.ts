@@ -7,7 +7,7 @@ import multer from 'multer';
 import {
   lerCardapio, alterarCardapio, lerPedidos, alterarPedidos,
   salvarFoto, lerFoto, INFO,
-} from './jsonStore';
+} from './jsonStore.js';
 
 const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 }, storage: multer.memoryStorage() });
 
