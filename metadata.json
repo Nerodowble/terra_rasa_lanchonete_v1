@@ -1,0 +1,8 @@
+{
+  "name": "Remix Comanda Digital \u0026 Gestor de Pedidos",
+  "description": "Sistema completo e responsivo de Delivery online, comanda eletrônica, cardápio digital interativo, KDS para cozinha/bar, despacho de motoboy e painel gerencial de pedidos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

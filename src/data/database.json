@@ -1,0 +1,23 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-08-18T12:00:00.000Z",
+  "restaurant": {
+    "name": "Bistrô & Burger Artesanal",
+    "tagline": "Comanda Digital & Cozinha Inteligente",
+    "phone": "(11) 98765-4321",
+    "address": "Av. Paulista, 1000 - São Paulo, SP",
+    "cnpj": "12.345.678/0001-90"
+  },
+  "auth": {
+    "role": "administrador",
+    "security": "protected"
+  },
+  "stats": {
+    "totalRevenue": 4820.50,
+    "totalOrders": 38,
+    "averageTicket": 126.85,
+    "totalDeliveries": 14,
+    "tablesServed": 24
+  },
+  "notes": "Arquivo base de dados e relatórios do restaurante para sincronização e controle local."
+}
